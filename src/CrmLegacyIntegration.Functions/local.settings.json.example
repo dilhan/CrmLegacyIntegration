@@ -1,0 +1,9 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "Jwt__SigningKey": "local-dev-only-signing-key-replace-me-32bytes",
+    "Jwt__RequiredRole": "member-registrations.write"
+  }
+}

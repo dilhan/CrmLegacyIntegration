@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <!-- So the app also runs on a machine that only has a newer major SDK/runtime installed. -->
+    <RollForward>LatestMajor</RollForward>
+  </PropertyGroup>
+</Project>
