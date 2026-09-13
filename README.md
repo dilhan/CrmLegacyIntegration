@@ -47,7 +47,7 @@ src/
   CrmLegacyIntegration.Core/        Pure C#: models, validation, mapping, JSON contract, JWT auth. No Azure Functions dependency.
   CrmLegacyIntegration.Functions/   The Azure Functions host (isolated worker): HTTP triggers + Swagger/OpenAPI wiring.
 tests/
-  CrmLegacyIntegration.Core.Tests/  xUnit + FluentAssertions tests against Core.
+  CrmLegacyIntegration.Core.Tests/  xUnit + FluentAssertions tests against Core, plus a handful of HTTP-layer tests against the Functions triggers (hand-written HttpRequestData/HttpResponseData fakes — status codes and response shapes only, not a re-test of Core's rules). One test project referencing both `src/` projects, rather than mirroring the src split one-for-one.
 ```
 
 ## Running it
@@ -96,7 +96,17 @@ curl -s -X POST http://localhost:7071/api/member-registrations \
 }
 ```
 
-A request missing a required field, with an implausible email, or with an unrecognized `membershipType` gets a `400` with a body like `{ "errors": ["email is not a valid email address."] }` listing every problem found, not just the first.
+A request missing a required field, with an implausible email, or with an unrecognized `membershipType` gets a `400` listing every problem found, not just the first, with a body like:
+
+```json
+{
+  "errors": [
+    { "field": "email", "code": "INVALID_EMAIL", "message": "email 'not-an-email' is not a valid email address." }
+  ]
+}
+```
+
+Each error's `code` is a small closed set of machine-readable identifiers (`REQUIRED`, `INVALID_EMAIL`, `INVALID_DATE_FORMAT`, `INVALID_MEMBERSHIP_TYPE`, `INVALID_JSON`) a caller can branch on directly, instead of string-matching `message` — which stays free to reword for humans without becoming a breaking change.
 
 ## Design decisions
 
@@ -105,9 +115,10 @@ A request missing a required field, with an implausible email, or with an unreco
 - **An unrecognized extra field in the request is ignored**, and that's pinned down by a test (`JsonContractTests`), not left as an accident of `System.Text.Json`'s default behavior.
 - **One shared `JsonSerializerOptions` set (`LegacyJsonSerialization`, in `Core/Json`)** is used by both the Function and the tests, so the wire format is defined and verified in exactly one place: case-insensitive camelCase in (`CrmRead`), `JsonNamingPolicy.SnakeCaseLower` out for the legacy contract specifically (`LegacyWrite` — `given_name`, `family_name`, `plan_code`, ...), and ordinary camelCase for everything else this API returns, like login tokens and error lists (`ApiDefault`) — no per-property JSON attributes.
 - **The plan-code lookup is a small closed dictionary** (`Single`→`S`, `Couple`→`C`, `Family`→`F`) shared between validation and mapping, so the two can't drift apart.
+- **Every `WriteAsJsonAsync` call passes its `HttpStatusCode` explicitly**, even when it matches what `CreateResponse` was already given. In the installed `Microsoft.Azure.Functions.Worker` 1.x line, the `WriteAsJsonAsync` overloads that don't take a status code reset the response to `200 OK` when they write the body — silently discarding a `400`/`401`/`403` set via `CreateResponse(statusCode)` moments earlier. This is Microsoft-documented Worker behavior, not a bug in this code, but it's an easy regression to reintroduce by "simplifying" a call site. A handful of HTTP-layer tests in `CrmLegacyIntegration.Core.Tests` (`MemberRegistrationHandlerTests`, `MapMemberRegistrationSecureFunctionTests`) pin down the actual status code returned for each error path, using minimal hand-written fakes for `HttpRequestData`/`HttpResponseData`/`FunctionContext` since the isolated worker gives no first-party test doubles for these — that gap is exactly what let this regression ship unnoticed in the first place, since the rest of the suite calls `RegistrationValidator`/`LegacyPayloadMapper` directly and never sees an `HttpResponseData` at all.
 - **The function doesn't log the raw email address** — only the outcome and membership type — since the request payload is personal data.
 - **The HTTP trigger uses `AuthorizationLevel.Function`**, the least-privilege default for a real deployment, even though this exercise doesn't deploy it. Azure Functions Core Tools doesn't enforce that key locally, so it doesn't get in the way of local testing.
-- **The trigger itself isn't unit tested.** Isolated-worker HTTP types (`HttpRequestData`/`HttpResponseData`) are awkward to fake convincingly, and the trigger is intentionally a thin pass-through over Core. It's exercised manually instead (via `func start` + curl/Swagger) — same cases, just over real HTTP.
+- **The trigger's business logic still isn't re-tested at the HTTP layer** — that stays Core's job, the HTTP-layer tests above only assert status codes and response shapes. Full end-to-end behavior is still exercised manually (via `func start` + curl/Swagger).
 
 ## Auth/authz example: `POST /api/secure/member-registrations`
 

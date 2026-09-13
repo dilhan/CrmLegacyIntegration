@@ -36,7 +36,7 @@ public class RegistrationValidatorTests
         var result = RegistrationValidator.Validate(null);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("Request body"));
+        result.Errors.Should().Contain(e => e.Message.Contains("Request body"));
     }
 
     [Theory]
@@ -51,7 +51,7 @@ public class RegistrationValidatorTests
         var result = RegistrationValidator.Validate(registration);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("firstName"));
+        result.Errors.Should().Contain(e => e.Field == "firstName");
     }
 
     [Theory]
@@ -65,7 +65,7 @@ public class RegistrationValidatorTests
         var result = RegistrationValidator.Validate(registration);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("lastName"));
+        result.Errors.Should().Contain(e => e.Field == "lastName");
     }
 
     [Theory]
@@ -79,7 +79,7 @@ public class RegistrationValidatorTests
         var result = RegistrationValidator.Validate(registration);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("dateOfBirth"));
+        result.Errors.Should().Contain(e => e.Field == "dateOfBirth");
     }
 
     [Theory]
@@ -94,7 +94,7 @@ public class RegistrationValidatorTests
         var result = RegistrationValidator.Validate(registration);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("dateOfBirth"));
+        result.Errors.Should().Contain(e => e.Field == "dateOfBirth");
     }
 
     [Theory]
@@ -123,7 +123,7 @@ public class RegistrationValidatorTests
         var result = RegistrationValidator.Validate(registration);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("email"));
+        result.Errors.Should().Contain(e => e.Field == "email");
     }
 
     [Theory]
@@ -139,7 +139,7 @@ public class RegistrationValidatorTests
         var result = RegistrationValidator.Validate(registration);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("email"));
+        result.Errors.Should().Contain(e => e.Field == "email" && e.Code == "INVALID_EMAIL");
     }
 
     [Theory]
@@ -153,7 +153,7 @@ public class RegistrationValidatorTests
         var result = RegistrationValidator.Validate(registration);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("membershipType"));
+        result.Errors.Should().Contain(e => e.Field == "membershipType");
     }
 
     [Theory]
@@ -167,7 +167,7 @@ public class RegistrationValidatorTests
         var result = RegistrationValidator.Validate(registration);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("membershipType"));
+        result.Errors.Should().Contain(e => e.Field == "membershipType" && e.Code == "INVALID_MEMBERSHIP_TYPE");
     }
 
     [Theory]

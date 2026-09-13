@@ -64,9 +64,13 @@ public class MapMemberRegistrationSecureFunction
             _logger.LogInformation("Rejected secure request: {Outcome}.", authResult.Outcome);
 
             var response = req.CreateResponse(statusCode);
+            // Must pass statusCode explicitly: the overload without it resets the
+            // response to 200 OK in this Worker version (Microsoft-documented),
+            // discarding the CreateResponse(statusCode) above.
             await response.WriteAsJsonAsync(
                 new { error = DescribeOutcome(authResult.Outcome) },
-                new JsonObjectSerializer(Core.Json.LegacyJsonSerialization.ApiDefault));
+                new JsonObjectSerializer(Core.Json.LegacyJsonSerialization.ApiDefault),
+                statusCode);
             return response;
         }
 

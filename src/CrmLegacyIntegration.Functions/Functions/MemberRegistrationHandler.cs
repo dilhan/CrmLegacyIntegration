@@ -30,7 +30,8 @@ public static class MemberRegistrationHandler
         catch (JsonException ex)
         {
             logger.LogWarning(ex, "Request body was not valid JSON.");
-            return await WriteErrorResponse(req, HttpStatusCode.BadRequest, new[] { "Request body is not valid JSON." });
+            return await WriteErrorResponse(req, HttpStatusCode.BadRequest,
+                new[] { new ValidationError(null, "INVALID_JSON", "Request body is not valid JSON.") });
         }
 
         var validation = RegistrationValidator.Validate(registration);
@@ -49,15 +50,18 @@ public static class MemberRegistrationHandler
             validation.Value!.MembershipType);
 
         var response = req.CreateResponse(HttpStatusCode.OK);
-        await response.WriteAsJsonAsync(payload, new JsonObjectSerializer(LegacyJsonSerialization.LegacyWrite));
+        await response.WriteAsJsonAsync(payload, new JsonObjectSerializer(LegacyJsonSerialization.LegacyWrite), HttpStatusCode.OK);
         return response;
     }
 
     private static async Task<HttpResponseData> WriteErrorResponse(
-        HttpRequestData req, HttpStatusCode statusCode, IEnumerable<string> errors)
+        HttpRequestData req, HttpStatusCode statusCode, IEnumerable<ValidationError> errors)
     {
         var response = req.CreateResponse(statusCode);
-        await response.WriteAsJsonAsync(new ErrorResponse(errors.ToList()), new JsonObjectSerializer(LegacyJsonSerialization.ApiDefault));
+        // WriteAsJsonAsync overloads that don't take an explicit HttpStatusCode reset the
+        // response to 200 OK in this Worker version (Microsoft-documented), silently
+        // discarding the CreateResponse(statusCode) above — always pass it explicitly.
+        await response.WriteAsJsonAsync(new ErrorResponse(errors.ToList()), new JsonObjectSerializer(LegacyJsonSerialization.ApiDefault), statusCode);
         return response;
     }
 }

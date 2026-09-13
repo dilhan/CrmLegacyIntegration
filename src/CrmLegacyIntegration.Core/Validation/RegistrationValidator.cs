@@ -13,50 +13,50 @@ public static class RegistrationValidator
     public static ValidationResult Validate(CrmRegistration? registration)
     {
         if (registration is null)
-            return ValidationResult.Failure(new[] { "Request body is required." });
+            return ValidationResult.Failure(new[] { new ValidationError(null, "REQUIRED", "Request body is required.") });
 
-        var errors = new List<string>();
+        var errors = new List<ValidationError>();
 
         var firstName = registration.FirstName?.Trim();
         if (string.IsNullOrWhiteSpace(firstName))
-            errors.Add("firstName is required.");
+            errors.Add(new ValidationError("firstName", "REQUIRED", "firstName is required."));
 
         var lastName = registration.LastName?.Trim();
         if (string.IsNullOrWhiteSpace(lastName))
-            errors.Add("lastName is required.");
+            errors.Add(new ValidationError("lastName", "REQUIRED", "lastName is required."));
 
         var dateOfBirth = default(DateOnly);
         if (string.IsNullOrWhiteSpace(registration.DateOfBirth))
         {
-            errors.Add("dateOfBirth is required.");
+            errors.Add(new ValidationError("dateOfBirth", "REQUIRED", "dateOfBirth is required."));
         }
         else if (!DateOfBirthParser.TryParse(registration.DateOfBirth, out dateOfBirth))
         {
-            errors.Add(
+            errors.Add(new ValidationError("dateOfBirth", "INVALID_DATE_FORMAT",
                 $"dateOfBirth '{registration.DateOfBirth}' could not be parsed. Expected " +
-                $"{DateOfBirthParser.CanonicalFormat} (or one of a small set of tolerated alternative formats).");
+                $"{DateOfBirthParser.CanonicalFormat} (or one of a small set of tolerated alternative formats)."));
         }
 
         var email = registration.Email?.Trim();
         if (string.IsNullOrWhiteSpace(email))
         {
-            errors.Add("email is required.");
+            errors.Add(new ValidationError("email", "REQUIRED", "email is required."));
         }
         else if (!EmailPattern.IsMatch(email))
         {
-            errors.Add($"email '{email}' is not a valid email address.");
+            errors.Add(new ValidationError("email", "INVALID_EMAIL", $"email '{email}' is not a valid email address."));
         }
 
         var membershipType = registration.MembershipType?.Trim();
         if (string.IsNullOrWhiteSpace(membershipType))
         {
-            errors.Add("membershipType is required.");
+            errors.Add(new ValidationError("membershipType", "REQUIRED", "membershipType is required."));
         }
         else if (!PlanCodes.ByMembershipType.ContainsKey(membershipType))
         {
-            errors.Add(
+            errors.Add(new ValidationError("membershipType", "INVALID_MEMBERSHIP_TYPE",
                 $"membershipType '{membershipType}' is not recognized. Expected one of: " +
-                $"{string.Join(", ", PlanCodes.ByMembershipType.Keys)}.");
+                $"{string.Join(", ", PlanCodes.ByMembershipType.Keys)}."));
         }
 
         // registeredAt isn't part of the legacy contract and isn't in the

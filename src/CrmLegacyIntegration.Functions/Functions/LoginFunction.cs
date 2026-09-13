@@ -43,7 +43,7 @@ public class LoginFunction
         var token = _issuer.IssueToken();
 
         var response = req.CreateResponse(HttpStatusCode.OK);
-        await response.WriteAsJsonAsync(new LoginResponse(token), new JsonObjectSerializer(ApiDefault));
+        await response.WriteAsJsonAsync(new LoginResponse(token), new JsonObjectSerializer(ApiDefault), HttpStatusCode.OK);
         return response;
     }
 }

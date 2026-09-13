@@ -11,19 +11,19 @@ namespace CrmLegacyIntegration.Core.Validation;
 /// </summary>
 public class ValidationResult
 {
-    public IReadOnlyList<string> Errors { get; }
+    public IReadOnlyList<ValidationError> Errors { get; }
     public ValidatedRegistration? Value { get; }
     public bool IsValid => Value is not null;
 
-    private ValidationResult(ValidatedRegistration? value, IReadOnlyList<string> errors)
+    private ValidationResult(ValidatedRegistration? value, IReadOnlyList<ValidationError> errors)
     {
         Value = value;
         Errors = errors;
     }
 
     public static ValidationResult Success(ValidatedRegistration value) =>
-        new(value, Array.Empty<string>());
+        new(value, Array.Empty<ValidationError>());
 
-    public static ValidationResult Failure(IReadOnlyList<string> errors) =>
+    public static ValidationResult Failure(IReadOnlyList<ValidationError> errors) =>
         new(null, errors);
 }
