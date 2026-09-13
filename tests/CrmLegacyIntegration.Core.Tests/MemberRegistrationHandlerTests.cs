@@ -9,13 +9,7 @@ using Xunit;
 
 namespace CrmLegacyIntegration.Core.Tests;
 
-/// <summary>
-/// Pins down the actual HTTP status code MemberRegistrationHandler returns
-/// for each outcome. The rest of this project exercises RegistrationValidator
-/// directly and never sees an HttpResponseData, so it can't catch a
-/// WriteAsJsonAsync overload silently resetting a 400 back to 200 — this is
-/// the layer that can.
-/// </summary>
+/// <summary>Verifies MemberRegistrationHandler returns the correct HTTP status code for each outcome.</summary>
 public class MemberRegistrationHandlerTests
 {
     private static FunctionContext CreateContext() => new Mock<FunctionContext>().Object;

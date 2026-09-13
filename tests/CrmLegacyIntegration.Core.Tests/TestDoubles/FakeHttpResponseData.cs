@@ -5,11 +5,9 @@ using Microsoft.Azure.Functions.Worker.Http;
 namespace CrmLegacyIntegration.Core.Tests.TestDoubles;
 
 /// <summary>
-/// Minimal <see cref="HttpResponseData"/> fake. The isolated worker gives no
-/// first-party test double for this abstract type, so this exists purely to
-/// let tests read back the <see cref="StatusCode"/> and <see cref="Body"/>
-/// a trigger actually wrote — which is exactly what a unit test needs to
-/// catch a WriteAsJsonAsync overload silently resetting the status to 200.
+/// Minimal <see cref="HttpResponseData"/> fake that lets tests read back the
+/// <see cref="StatusCode"/> and <see cref="Body"/> a trigger actually wrote.
+/// The isolated worker gives no first-party test double for this type.
 /// </summary>
 public sealed class FakeHttpResponseData : HttpResponseData
 {

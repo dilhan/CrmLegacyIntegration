@@ -58,9 +58,7 @@ public static class MemberRegistrationHandler
         HttpRequestData req, HttpStatusCode statusCode, IEnumerable<ValidationError> errors)
     {
         var response = req.CreateResponse(statusCode);
-        // WriteAsJsonAsync overloads that don't take an explicit HttpStatusCode reset the
-        // response to 200 OK in this Worker version (Microsoft-documented), silently
-        // discarding the CreateResponse(statusCode) above — always pass it explicitly.
+        // WriteAsJsonAsync without an explicit status code always writes 200 OK in this Worker version.
         await response.WriteAsJsonAsync(new ErrorResponse(errors.ToList()), new JsonObjectSerializer(LegacyJsonSerialization.ApiDefault), statusCode);
         return response;
     }

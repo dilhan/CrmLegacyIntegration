@@ -11,13 +11,7 @@ using Xunit;
 
 namespace CrmLegacyIntegration.Core.Tests;
 
-/// <summary>
-/// Pins down the actual HTTP status code the secure endpoint returns for
-/// each auth outcome — the same class of thing MemberRegistrationHandlerTests
-/// covers for validation outcomes. A WriteAsJsonAsync overload silently
-/// resetting a 401/403 back to 200 would let a rejected request look
-/// successful to a caller checking only the status code.
-/// </summary>
+/// <summary>Verifies the secure endpoint returns the correct HTTP status code for each auth outcome.</summary>
 public class MapMemberRegistrationSecureFunctionTests
 {
     private static readonly JwtOptions Options = new();
