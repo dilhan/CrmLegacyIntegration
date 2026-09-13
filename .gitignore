@@ -2,4 +2,5 @@ bin/
 obj/
 *.user
 .vs/
+.idea/
 local.settings.json
