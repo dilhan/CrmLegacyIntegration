@@ -34,10 +34,12 @@ public class MapMemberRegistrationFunction
         Description = "The legacy system's payload.")]
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.BadRequest, contentType: "application/json", bodyType: typeof(ErrorResponse),
         Description = "One or more validation errors.")]
-    public Task<HttpResponseData> Run(
+    public async Task<HttpResponseData> Run(
         [HttpTrigger(AuthorizationLevel.Function, "post", Route = "member-registrations")]
-        HttpRequestData req)
+        HttpRequestData req,
+        FunctionContext context)
     {
-        return MemberRegistrationHandler.HandleAsync(req, _logger);
+        using var _ = _logger.BeginScope(new Dictionary<string, object?> { ["InvocationId"] = context.InvocationId });
+        return await MemberRegistrationHandler.HandleAsync(req, _logger);
     }
 }

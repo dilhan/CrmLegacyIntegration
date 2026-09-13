@@ -36,8 +36,11 @@ public class LoginFunction
     [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(LoginResponse))]
     public async Task<HttpResponseData> Run(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "login")]
-        HttpRequestData req)
+        HttpRequestData req,
+        FunctionContext context)
     {
+        using var _ = _logger.BeginScope(new Dictionary<string, object?> { ["InvocationId"] = context.InvocationId });
+
         _logger.LogInformation("Issuing a demo access token.");
 
         var token = _issuer.IssueToken();

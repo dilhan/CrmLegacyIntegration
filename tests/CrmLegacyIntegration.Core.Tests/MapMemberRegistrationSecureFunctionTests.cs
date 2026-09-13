@@ -36,7 +36,7 @@ public class MapMemberRegistrationSecureFunctionTests
         var context = CreateContext();
         var request = new FakeHttpRequestData(context, "{}");
 
-        var response = (FakeHttpResponseData)await CreateFunction().Run(request);
+        var response = (FakeHttpResponseData)await CreateFunction().Run(request, context);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -47,7 +47,7 @@ public class MapMemberRegistrationSecureFunctionTests
         var context = CreateContext();
         var request = RequestWithBearerToken(context, "not-a-jwt");
 
-        var response = (FakeHttpResponseData)await CreateFunction().Run(request);
+        var response = (FakeHttpResponseData)await CreateFunction().Run(request, context);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -59,7 +59,7 @@ public class MapMemberRegistrationSecureFunctionTests
         var tokenWithoutRole = new JwtAccessTokenIssuer(new JwtOptions { RequiredRole = "some.other.role" }).IssueToken();
         var request = RequestWithBearerToken(context, tokenWithoutRole);
 
-        var response = (FakeHttpResponseData)await CreateFunction().Run(request);
+        var response = (FakeHttpResponseData)await CreateFunction().Run(request, context);
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -80,7 +80,7 @@ public class MapMemberRegistrationSecureFunctionTests
             """;
         var request = RequestWithBearerToken(context, validToken, body);
 
-        var response = (FakeHttpResponseData)await CreateFunction().Run(request);
+        var response = (FakeHttpResponseData)await CreateFunction().Run(request, context);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }

@@ -2,6 +2,26 @@
 
 An HTTP-triggered Azure Function that takes a member registration in the CRM's JSON shape and returns the payload the legacy membership system's API expects: renamed and nested fields, a reformatted date of birth, and a membership-type-to-plan-code lookup.
 
+## What the brief asked for, and what's extra
+
+The exercise asked for:
+
+1. A function that maps the CRM's JSON registration to the legacy system's JSON payload — correctly mapped, nested, and formatted.
+2. Validation before mapping, returning a clear error (never an unhandled exception) for a missing required field, an implausible email, or an unrecognized `membershipType`.
+3. Graceful handling of a `dateOfBirth` in an unexpected format, and an unexpected extra input field (ignored, not a crash).
+4. Automated tests covering: a valid registration, each validation failure, the plan-code mapping, and the date-format conversion.
+5. *(Nice-to-have, not required)* A README note on wiring this into a real outbound call — auth, retries, timeouts.
+
+All five are done — see **Design decisions** below for where each one lives, and `tests/CrmLegacyIntegration.Core.Tests/` for exactly where each is covered by a test. Nice-to-have #5 became its own section, **Wiring this into a real outbound call**, and grew to also cover idempotency and failure handling.
+
+**Everything below this line was not asked for** — added to show what else a real version of this Function would need, without it being necessary to satisfy the brief itself:
+
+- **JWT bearer authentication/authorization** (`POST /login`, `POST /secure/member-registrations`) — a second copy of the mapping endpoint behind a hand-rolled HS256 bearer-token check, next to the Functions-key-only main endpoint, to show what application-level auth/authz looks like. See **Auth/authz example** below.
+- **Swagger/OpenAPI UI** (`Microsoft.Azure.Functions.Worker.Extensions.OpenApi`) — request/response schemas, an in-browser "Try it out," and a script that auto-flows a minted token into Swagger's Authorize button.
+- **Structured, machine-readable validation errors** (`{ field, code, message }`, not a plain string list) — the brief only asks for "a clear validation error"; this makes the error something a caller can branch on programmatically too.
+- **Correlation-ID logging** — every log line for one request shares the same `FunctionContext.InvocationId` via an `ILogger` scope, so they can be tied together in a log aggregation system.
+- **HTTP-layer regression tests** beyond what task 4 asks for — tests asserting the actual HTTP status code a trigger returns, not just Core's return values. This is what caught and now pins down a real Azure Functions Worker SDK gotcha (see the `WriteAsJsonAsync` bullet under Design decisions).
+
 ## Architecture
 
 ```
@@ -117,6 +137,7 @@ Each error's `code` is a small closed set of machine-readable identifiers (`REQU
 - **The plan-code lookup is a small closed dictionary** (`Single`→`S`, `Couple`→`C`, `Family`→`F`) shared between validation and mapping, so the two can't drift apart.
 - **Every `WriteAsJsonAsync` call passes its `HttpStatusCode` explicitly**, even when it matches what `CreateResponse` was already given. In the installed `Microsoft.Azure.Functions.Worker` 1.x line, the `WriteAsJsonAsync` overloads that don't take a status code reset the response to `200 OK` when they write the body — silently discarding a `400`/`401`/`403` set via `CreateResponse(statusCode)` moments earlier. This is Microsoft-documented Worker behavior, not a bug in this code, but it's an easy regression to reintroduce by "simplifying" a call site. A handful of HTTP-layer tests in `CrmLegacyIntegration.Core.Tests` (`MemberRegistrationHandlerTests`, `MapMemberRegistrationSecureFunctionTests`) pin down the actual status code returned for each error path, using minimal hand-written fakes for `HttpRequestData`/`HttpResponseData`/`FunctionContext` since the isolated worker gives no first-party test doubles for these — that gap is exactly what let this regression ship unnoticed in the first place, since the rest of the suite calls `RegistrationValidator`/`LegacyPayloadMapper` directly and never sees an `HttpResponseData` at all.
 - **The function doesn't log the raw email address** — only the outcome and membership type — since the request payload is personal data.
+- **Every log line for a request carries an `InvocationId` correlation scope** (`logger.BeginScope(...)`, opened once at the top of each trigger's `Run`), using the Functions host's own per-invocation `FunctionContext.InvocationId` rather than minting a new ID. `ILogger` scopes are ambient for the lifetime of the `using` block, so this covers every downstream log call too — including the ones inside `MemberRegistrationHandler`, which takes a plain `ILogger` and has no idea a scope exists — without changing that shared code at all.
 - **The HTTP trigger uses `AuthorizationLevel.Function`**, the least-privilege default for a real deployment, even though this exercise doesn't deploy it. Azure Functions Core Tools doesn't enforce that key locally, so it doesn't get in the way of local testing.
 - **The trigger's business logic still isn't re-tested at the HTTP layer** — that stays Core's job, the HTTP-layer tests above only assert status codes and response shapes. Full end-to-end behavior is still exercised manually (via `func start` + curl/Swagger).
 

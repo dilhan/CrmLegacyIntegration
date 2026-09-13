@@ -51,8 +51,11 @@ public class MapMemberRegistrationSecureFunction
     [OpenApiResponseWithoutBody(statusCode: HttpStatusCode.Forbidden, Description = "Token is valid but missing the required role.")]
     public async Task<HttpResponseData> Run(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "secure/member-registrations")]
-        HttpRequestData req)
+        HttpRequestData req,
+        FunctionContext context)
     {
+        using var _ = _logger.BeginScope(new Dictionary<string, object?> { ["InvocationId"] = context.InvocationId });
+
         var authResult = _authenticator.Authenticate(ExtractBearerToken(req));
 
         if (!authResult.IsAuthorized)
